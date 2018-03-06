@@ -31,20 +31,18 @@ function all(req, res) {
   // })
 }
 
-function get (req, res) {
+function get(req, res) {
   var id = req.params.id
   var result
 
-  if (id == '-') {
-    result = { errors: [{ id: 400, title: 'Bad request' }], data: {} }
+  if (id === '-') {
+    result = {errors: [{id: 400, title: 'Bad request'}], data: {}}
     res.render('error.ejs', Object.assign({}, result, helpers))
   } else if (!db.has(id)) {
-    result = { errors: [{ id: 404, title: 'Page not found' }], data: {} }
+    result = {errors: [{id: 404, title: 'Page not found'}], data: {}}
     res.render('error.ejs', Object.assign({}, result, helpers))
   } else {
     result = {errors: [], data: db.get(id)}
     res.render('detail.ejs', Object.assign({}, result, helpers))
   }
-
-
 }
