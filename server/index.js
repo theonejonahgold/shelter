@@ -36,7 +36,7 @@ function get (req, res) {
   var result
 
   if (!db.has(id)) {
-    result = {errors: [{id: 404, title: 'Cat not found'}], data: {}}
+    result = {errors: [{id: 404, title: 'Page not found'}], data: {}}
     res.render('error.ejs', Object.assign({}, result, helpers))
   } else {
     result = {errors: [], data: db.get(id)}
