@@ -5,3 +5,5 @@ coverage/
 node_modules/
 static/index.js
 static/index.css
+package-lock.json
+yarn.lock
