@@ -3,7 +3,7 @@
 var express = require('express')
 var db = require('../db')
 var helpers = require('./helpers')
-var invalidIdentifiers = /[^\d]/g
+var invalidIdentifiers = new RegExp(/[^\d]/)
 
 module.exports = express()
   .set('view engine', 'ejs')
