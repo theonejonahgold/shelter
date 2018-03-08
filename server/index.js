@@ -4,15 +4,18 @@ var express = require('express')
 var db = require('../db')
 var helpers = require('./helpers')
 var HTTPStatus = require('http-status')
+var bodyParser = require('body-parser')
 
 module.exports = express()
   .set('view engine', 'ejs')
   .set('views', 'view')
   .use(express.static('static'))
   .use('/image', express.static('db/image'))
+  .use(bodyParser.urlencoded({ extended: true }))
   .get('/', all)
   /* TODO: Other HTTP methods. */
-  // .post('/', add)
+  .post('/', add)
+  .get('/add', addForm)
   .get('/:id', get)
   // .put('/:id', set)
   // .patch('/:id', change)
@@ -40,6 +43,34 @@ function get(req, res) {
             html: () => res.render('detail.ejs', Object.assign({}, result, helpers))
         })
     } else error(isInvalidRequest, res)
+}
+
+function addForm(req, res) {
+  res.render('add.ejs')
+}
+
+function add (req, res) {
+  console.log(req.body.secondaryColor)
+  var newAnimal = {
+    name: req.body.name,
+    type: req.body.type,
+    description: req.body.description,
+    place: req.body.place,
+    intake: req.body.intake,
+    sex: req.body.sex,
+    age: parseInt(req.body.age, 10),
+    weight: parseInt(req.body.weight || '0', 10),
+    size: req.body.size,
+    length: req.body.length,
+    coat: req.body.coat,
+    vaccinated: req.body.vaccinated == '1' ? true : false,
+    declawed: req.body.declawed != undefined ? req.body.declawed == '1' ? true : false : undefined,
+    primaryColor: req.body.primaryColor,
+    secondaryColor: req.body.secondaryColor == '' ? undefined : req.body.secondaryColor
+  }
+  console.log(newAnimal.secondaryColor)
+  var addedAnimal = db.add(newAnimal)
+  res.redirect('/' + addedAnimal.id)
 }
 
 function remove(req, res) {
