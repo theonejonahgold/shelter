@@ -50,7 +50,6 @@ function addForm(req, res) {
 }
 
 function add (req, res) {
-  console.log(req.body.secondaryColor)
   var newAnimal = {
     name: req.body.name,
     type: req.body.type,
@@ -67,8 +66,7 @@ function add (req, res) {
     declawed: req.body.declawed != undefined ? req.body.declawed == '1' ? true : false : undefined,
     primaryColor: req.body.primaryColor,
     secondaryColor: req.body.secondaryColor == '' ? undefined : req.body.secondaryColor
-  }
-  console.log(newAnimal.secondaryColor)
+
   var addedAnimal = db.add(newAnimal)
   res.redirect('/' + addedAnimal.id)
 }
