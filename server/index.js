@@ -49,7 +49,7 @@ function addForm(req, res) {
   res.render('add.ejs')
 }
 
-function add (req, res) {
+function add(req, res) {
   var newAnimal = {
     name: req.body.name,
     type: req.body.type,
@@ -66,9 +66,11 @@ function add (req, res) {
     declawed: req.body.declawed != undefined ? req.body.declawed == '1' ? true : false : undefined,
     primaryColor: req.body.primaryColor,
     secondaryColor: req.body.secondaryColor == '' ? undefined : req.body.secondaryColor
-
-  var addedAnimal = db.add(newAnimal)
-  res.redirect('/' + addedAnimal.id)
+  }
+  if (!isInvalidAnimal(newAnimal, res)) {
+    var addedAnimal = db.add(newAnimal)
+    res.redirect('/' + addedAnimal.id)
+  }
 }
 
 function remove(req, res) {
@@ -79,6 +81,22 @@ function remove(req, res) {
         db.remove(id)
         res.status(204).end()
     } else error(isInvalidRequest, res)
+}
+
+function isInvalidAnimal(animal, res) {
+    if (
+      (animal.type == 'dog' && typeof animal.declawed != 'undefined')
+      || (typeof animal.age != 'number' || isNaN(animal.age))
+      || (typeof animal.weight != 'number' || isNaN(animal.weight))
+      || (!animal.name
+        || !animal.type
+        || !animal.place
+        || !animal.intake
+        || !animal.sex
+        || !animal.vaccinated
+        || !animal.primaryColor)
+    ) error(422, res)
+    else return false
 }
 
 function isInvalidId(id) {
