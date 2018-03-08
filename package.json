@@ -51,7 +51,7 @@
     "xo": "^0.18.2"
   },
   "scripts": {
-    "start": "node server",
+    "start": "nodemon server",
     "lint:js": "xo",
     "lint:css": "stylelint src/index.css",
     "lint:md": "remark . -qf",
@@ -61,7 +61,8 @@
     "build:md": "remark . -qfo",
     "build": "npm run build:js && npm run build:css",
     "test": "node test",
-    "test-coverage": "nyc --reporter lcov tape test.js"
+    "test-coverage": "nyc --reporter lcov tape test.js",
+    "postinstall": "yarn global add nodemon || npm i -g nodemon"
   },
   "nyc": {
     "check-coverage": true,
