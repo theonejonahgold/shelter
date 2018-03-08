@@ -3,6 +3,7 @@
 var express = require('express')
 var db = require('../db')
 var helpers = require('./helpers')
+var invalidIdentifiers = /[^\d]/g
 
 module.exports = express()
   .set('view engine', 'ejs')
@@ -35,7 +36,7 @@ function get(req, res) {
   var id = req.params.id
   var result
 
-  if (id === '-') {
+  if (invalidIdentifiers.test(id)) {
     result = {errors: [{id: 400, title: 'Bad request'}], data: {}}
     res.render('error.ejs', Object.assign({}, result, helpers))
   } else if (!db.has(id)) {
@@ -43,6 +44,11 @@ function get(req, res) {
     res.render('error.ejs', Object.assign({}, result, helpers))
   } else {
     result = {errors: [], data: db.get(id)}
-    res.render('detail.ejs', Object.assign({}, result, helpers))
+    // res.render('detail.ejs', Object.assign({}, result, helpers))
   }
+
+  res.format({
+    json: () => res.json(result.data),
+    html: () => res.render('detail.ejs', Object.assign({}, result, helpers))
+  })
 }
