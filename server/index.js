@@ -5,8 +5,6 @@ var db = require('../db')
 var helpers = require('./helpers')
 var HTTPStatus = require('http-status')
 
-var invalidIdentifiers = new RegExp(/[^\d]/)
-
 module.exports = express()
   .set('view engine', 'ejs')
   .set('views', 'view')
@@ -18,7 +16,7 @@ module.exports = express()
   .get('/:id', get)
   // .put('/:id', set)
   // .patch('/:id', change)
-  // .delete('/:id', remove)
+  .delete('/:id', remove)
   .listen(1902)
 
 function all(req, res) {
@@ -33,16 +31,34 @@ function all(req, res) {
 
 function get(req, res) {
     var id = req.params.id
+    var isInvalidRequest = isInvalidId(id)
 
-    if (invalidIdentifiers.test(id)) error(400, res)
-    else if (!db.has(id)) error(404, res)
-    else {
+    if (!isInvalidRequest) {
         var result = {data: db.get(id)}
         res.format({
             json: () => res.json(result.data),
             html: () => res.render('detail.ejs', Object.assign({}, result, helpers))
         })
-    }
+    } else error(isInvalidRequest, res)
+}
+
+function remove(req, res) {
+    var id = req.params.id
+    var isInvalidRequest = isInvalidId(id)
+
+    if (!isInvalidRequest) {
+        db.remove(id)
+        res.status(204).end()
+    } else error(isInvalidRequest, res)
+}
+
+function isInvalidId(id) {
+    var invalidIdentifiers = new RegExp(/[^\d]/)
+
+    if (invalidIdentifiers.test(id)) return 400
+    else if (db.removed(id)) return 410
+    else if (!db.has(id)) return 404
+    else return false
 }
 
 function error(errCode,  res) {
@@ -51,7 +67,7 @@ function error(errCode,  res) {
         errors: [{ id: errCode, title: HTTPStatus[errCode] }]
     }
     res.format({
-        json: () => res.json(errObj.errors),
+        json: () => res.status(errCode).json(errObj.errors),
         html: () => res.render('error.ejs', Object.assign({}, errObj, helpers))
     })
 }
