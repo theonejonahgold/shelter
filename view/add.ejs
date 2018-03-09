@@ -5,7 +5,11 @@
 <title>Add animal | Shelter</title>
 <link rel=stylesheet href=/index.css>
 <main class="container">
-  <form action="/" method="post">
+  <form action="/" method="post" enctype="multipart/form-data">
+    <label>
+      Image
+      <input type="file" name="image" accept="image/jpeg">
+    </label>
     <label>
       Name*
       <input type="text" name="name" required>
@@ -14,7 +18,7 @@
       Animal type*
       <select name="type" required>
         <option value="dog">Dog</option>
-        <option value="cat">Catt</option>
+        <option value="cat">Cat</option>
         <option value="rabbit">Rabbit</option>
       </select>
     </label>
