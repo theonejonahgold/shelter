@@ -79,8 +79,7 @@ function remove(req, res) {
     try {
         db.remove(id)
     } catch (err) {
-        if (err.code == db.ERR_UNKNOWN_ID)
-            error(410, res)
+        if (db.removed(id)) error(410, res)
         else error(404, res)
         return
     }
