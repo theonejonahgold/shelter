@@ -24,7 +24,6 @@ module.exports = express()
 
 function all(req, res) {
     var result = {errors: [], data: db.all()}
-
     /* Support both a request for JSON and a request for HTML  */
     res.format({
         json: () => res.json(result),
@@ -34,78 +33,58 @@ function all(req, res) {
 
 function get(req, res) {
     var id = req.params.id
-    var isInvalidRequest = isInvalidId(id)
-
-    if (!isInvalidRequest) {
-        var result = {data: db.get(id)}
+    if (db.has(id)) {
+        var result = { data: db.get(id) }
         res.format({
             json: () => res.json(result.data),
             html: () => res.render('detail.ejs', Object.assign({}, result, helpers))
         })
-    } else error(isInvalidRequest, res)
+    }
+    else if (db.removed(id)) error(410, res)
+    else error(404, res)
 }
 
 function addForm(req, res) {
-  res.render('add.ejs')
+    res.render('add.ejs')
 }
 
 function add(req, res) {
-  var newAnimal = {
-    name: req.body.name,
-    type: req.body.type,
-    description: req.body.description,
-    place: req.body.place,
-    intake: req.body.intake,
-    sex: req.body.sex,
-    age: parseInt(req.body.age, 10),
-    weight: parseInt(req.body.weight || '0', 10),
-    size: req.body.size,
-    length: req.body.length,
-    coat: req.body.coat,
-    vaccinated: req.body.vaccinated == '1' ? true : false,
-    declawed: req.body.declawed != undefined ? req.body.declawed == '1' ? true : false : undefined,
-    primaryColor: req.body.primaryColor,
-    secondaryColor: req.body.secondaryColor == '' ? undefined : req.body.secondaryColor
-  }
-  if (!isInvalidAnimal(newAnimal, res)) {
-    var addedAnimal = db.add(newAnimal)
-    res.redirect('/' + addedAnimal.id)
-  }
+    var newAnimal = {
+        name: req.body.name,
+        type: req.body.type,
+        description: req.body.description,
+        place: req.body.place,
+        intake: req.body.intake,
+        sex: req.body.sex,
+        age: parseInt(req.body.age, 10),
+        weight: parseInt(req.body.weight || '0', 10),
+        size: req.body.size,
+        length: req.body.length,
+        coat: req.body.coat,
+        vaccinated: req.body.vaccinated == '1' ? true : false,
+        declawed: req.body.declawed != undefined ? req.body.declawed == '1' ? true : false : undefined,
+        primaryColor: req.body.primaryColor,
+        secondaryColor: req.body.secondaryColor == '' ? undefined : req.body.secondaryColor
+    }
+    try {
+        var addedAnimal = db.add(newAnimal)
+        res.redirect('/' + addedAnimal.id)
+    } catch (err) {
+        error(422, res)
+    }
 }
 
 function remove(req, res) {
     var id = req.params.id
-    var isInvalidRequest = isInvalidId(id)
-
-    if (!isInvalidRequest) {
+    try {
         db.remove(id)
-        res.status(204).end()
-    } else error(isInvalidRequest, res)
-}
-
-function isInvalidAnimal(animal, res) {
-    if (
-      (animal.type == 'dog' && typeof animal.declawed != 'undefined')
-      || (typeof animal.age != 'number' || isNaN(animal.age))
-      || (typeof animal.weight != 'number' || isNaN(animal.weight))
-      || (!animal.name
-        || !animal.type
-        || !animal.place
-        || !animal.intake
-        || !animal.sex
-        || !animal.vaccinated
-        || !animal.primaryColor)
-    ) error(422, res)
-    else return false
-}
-
-function isInvalidId(id) {
-    var invalidIdentifiers = new RegExp(/[^\d]/)
-
-    if (invalidIdentifiers.test(id)) return 400
-    else if (db.removed(id)) return 410
-    else if (!db.has(id)) return 404
-    else return false
+    } catch (err) {
+        if (err.code == db.ERR_UNKNOWN_ID)
+            error(410, res)
+        else error(404, res)
+        return
+    }
+    res.status(204).end()
 }
 
 function error(errCode,  res) {
