@@ -11,9 +11,11 @@ var multer = require('multer')
 var upload = multer({
   dest: 'db/image',
   fileFilter: function (req, file, cb) {
-    if (file.mimetype != 'image/jpeg')
+    if (file.mimetype != 'image/jpeg') {
       cb(null, false)
-    else cb(null, true)
+    } else {
+      cb(null, true)
+    }
   }
 })
 
@@ -50,7 +52,15 @@ function all(req, res) {
 
 function get(req, res) {
   var id = req.params.id
+  var has
+
   try {
+    has = db.has(id)
+  } catch (err) {
+    onerror(400, res)
+  }
+
+  if (has) {
     var result = {
       data: db.get(id)
     }
@@ -58,9 +68,12 @@ function get(req, res) {
       json: () => res.json(result.data),
       html: () => res.render('detail.ejs', Object.assign({}, result, helpers))
     })
-  } catch (err) {
-    if (db.removed(id)) error(410, res)
-    else error(404, res)
+  } else {
+    if (db.removed(id)) {
+      onerror(410, res)
+    } else {
+      onerror(404, res)
+    }
   }
 }
 
@@ -70,7 +83,7 @@ function addForm(req, res) {
 
 function add(req, res) {
   var newAnimal
-  if (req.headers['content-type'].split(';')[0] == 'multipart/form-data')
+  if (req.headers['content-type'].split(';')[0] == 'multipart/form-data') {
     newAnimal = {
       name: req.body.name,
       type: req.body.type,
@@ -83,18 +96,17 @@ function add(req, res) {
       size: req.body.size,
       length: req.body.length,
       coat: req.body.coat,
-      vaccinated: req.body.vaccinated == '1' ? true : false,
-      declawed: req.body.declawed != undefined
-        ? req.body.declawed == '1'
-          ? true
-          : false
-        : undefined,
+      vaccinated: req.body.vaccinated == '1',
+      declawed: req.body.declawed != undefined ?
+        req.body.declawed == '1' :
+        undefined,
       primaryColor: req.body.primaryColor,
-      secondaryColor: req.body.secondaryColor == ''
-        ? undefined
-        : req.body.secondaryColor
+      secondaryColor: req.body.secondaryColor == '' ?
+        undefined :
+        req.body.secondaryColor
     }
-  else newAnimal = {
+  } else {
+    newAnimal = {
       name: req.body.name,
       type: req.body.type,
       description: req.body.description,
@@ -111,17 +123,25 @@ function add(req, res) {
       primaryColor: req.body.primaryColor,
       secondaryColor: req.body.secondaryColor
     }
+  }
   try {
     var addedAnimal = db.add(newAnimal)
-    if (req.file) fs.rename(req.file.path, `db/image/${addedAnimal.id}.jpg`)
+    if (req.file) {
+      fs.rename(req.file.path, `db/image/${addedAnimal.id}.jpg`)
+    }
     res.redirect('/' + addedAnimal.id)
   } catch (err) {
-    if (req.file)
+    if (req.file) {
       fs.unlink(req.file.path, function (err) {
-        if (err) error(500, res)
-        else error(422, res)
+        if (err) {
+          onerror(500, res)
+        } else {
+          onerror(422, res)
+        }
       })
-    else error(422, res)
+    } else {
+      onerror(422, res)
+    }
   }
 }
 
@@ -129,18 +149,23 @@ function remove(req, res) {
   var id = req.params.id
   try {
     db.remove(id)
-    fs.unlink(`db/image/${id}.jpg`, function(err) {
-      if (err) console.log(err)
+    fs.unlink(`db/image/${id}.jpg`, function (err) {
+      if (err) {
+        console.log(err)
+      }
     })
   } catch (err) {
-    if (db.removed(id)) error(410, res)
-    else error(404, res)
+    if (db.removed(id)) {
+      onerror(410, res)
+    } else {
+      onerror(404, res)
+    }
     return
   }
   res.status(204).end()
 }
 
-function error(errCode, res) {
+function onerror(errCode, res) {
   // TODO: Add recursive error code adding if multiple error codes are given
   var errObj = {
     errors: [{
