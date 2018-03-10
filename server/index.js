@@ -33,8 +33,8 @@ module.exports = express()
   .get('/add', addForm)
   .get('/:id', get)
   /* TODO: Other HTTP methods. */
-  // .put('/:id', set)
-  // .patch('/:id', change)
+  .put('/:id', set)
+  .patch('/:id', change)
   .delete('/:id', remove)
   .listen(1902)
 
@@ -68,12 +68,10 @@ function get(req, res) {
       json: () => res.json(result.data),
       html: () => res.render('detail.ejs', Object.assign({}, result, helpers))
     })
+  } else if (db.removed(id)) {
+    onerror(410, res)
   } else {
-    if (db.removed(id)) {
-      onerror(410, res)
-    } else {
-      onerror(404, res)
-    }
+    onerror(404, res)
   }
 }
 
@@ -126,6 +124,29 @@ function add(req, res) {
     } else {
       onerror(422, res)
     }
+  }
+}
+
+function set(req, res) {
+  var paramId = req.params.id
+  var bodyId = req.body.id
+
+  if (paramId == bodyId) {
+    var resStatus
+    try {
+      if (db.has(bodyId)) {
+        resStatus = 200
+      } else {
+        resStatus = 201
+      }
+      var setAnimal = db.set(req.body)
+      res.status(resStatus).send()
+    } catch (err) {
+      console.error(err)
+      onerror(422, res)
+    }
+  } else {
+    onerror(400, res)
   }
 }
 
