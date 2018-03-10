@@ -32,7 +32,6 @@ module.exports = express()
   .post('/', upload.single('image'), add)
   .get('/add', addForm)
   .get('/:id', get)
-  /* TODO: Other HTTP methods. */
   .put('/:id', set)
   .patch('/:id', change)
   .delete('/:id', remove)
@@ -65,7 +64,7 @@ function get(req, res) {
       data: db.get(id)
     }
     res.format({
-      json: () => res.json(result.data),
+      json: () => res.json(result),
       html: () => res.render('detail.ejs', Object.assign({}, result, helpers))
     })
   } else if (db.removed(id)) {
@@ -140,13 +139,40 @@ function set(req, res) {
         resStatus = 201
       }
       var setAnimal = db.set(req.body)
-      res.status(resStatus).send()
+      res.status(resStatus).send({
+        errors: [],
+        data: db.get(bodyId)
+      })
     } catch (err) {
       console.error(err)
       onerror(422, res)
     }
   } else {
     onerror(400, res)
+  }
+}
+
+function change(req, res) {
+  var id = req.params.id
+  try {
+    if (db.has(id)) {
+      var dbEntry = db.get(id)
+      for (var property in req.body) {
+        dbEntry[property] = req.body[property]
+      }
+      db.set(dbEntry)
+      res.status(200).json({
+        errors: [],
+        data: db.get(id)
+      })
+    } else if (db.removed(id)) {
+      onerror(410, res)
+    } else {
+      onerror(404, res)
+    }
+  } catch (err) {
+    console.error(err)
+    onerror(422, res)
   }
 }
 
@@ -159,6 +185,7 @@ function remove(req, res) {
         console.log(err)
       }
     })
+    res.status(204).end()
   } catch (err) {
     if (db.removed(id)) {
       onerror(410, res)
@@ -167,7 +194,6 @@ function remove(req, res) {
     }
     return
   }
-  res.status(204).end()
 }
 
 function onerror(errCode, res) {
