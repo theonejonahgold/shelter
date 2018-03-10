@@ -143,7 +143,6 @@ function set(req, res) {
         data: db.get(bodyId)
       })
     } catch (err) {
-      console.error(err)
       onerror(422, res)
     }
   } else {
@@ -170,7 +169,6 @@ function change(req, res) {
       onerror(404, res)
     }
   } catch (err) {
-    console.error(err)
     onerror(422, res)
   }
 }
@@ -181,7 +179,8 @@ function remove(req, res) {
     db.remove(id)
     fs.unlink(`db/image/${id}.jpg`, function (err) {
       if (err) {
-        console.log(err)
+        onerror(500, res)
+        return
       }
     })
     res.status(204).end()
