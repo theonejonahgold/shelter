@@ -129,7 +129,6 @@ function add(req, res) {
 function set(req, res) {
   var paramId = req.params.id
   var bodyId = req.body.id
-
   if (paramId == bodyId) {
     var resStatus
     try {
@@ -139,7 +138,7 @@ function set(req, res) {
         resStatus = 201
       }
       var setAnimal = db.set(req.body)
-      res.status(resStatus).send({
+      res.status(resStatus).json({
         errors: [],
         data: db.get(bodyId)
       })
@@ -197,7 +196,6 @@ function remove(req, res) {
 }
 
 function onerror(errCode, res) {
-  // TODO: Add recursive error code adding if multiple error codes are given
   var errObj = {
     errors: [{
       id: errCode,
