@@ -106,23 +106,7 @@ function add(req, res) {
         req.body.secondaryColor
     }
   } else {
-    newAnimal = {
-      name: req.body.name,
-      type: req.body.type,
-      description: req.body.description,
-      place: req.body.place,
-      intake: req.body.intake,
-      sex: req.body.sex,
-      age: req.body.age,
-      weight: req.body.weight,
-      size: req.body.size,
-      length: req.body.length,
-      coat: req.body.coat,
-      vaccinated: req.body.vaccinated,
-      declawed: req.body.declawed,
-      primaryColor: req.body.primaryColor,
-      secondaryColor: req.body.secondaryColor
-    }
+    newAnimal = req.body
   }
   try {
     var addedAnimal = db.add(newAnimal)
