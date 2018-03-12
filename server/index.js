@@ -5,17 +5,13 @@ var express = require('express')
 var db = require('../db')
 var helpers = require('./helpers')
 var HTTPStatus = require('http-status')
+var contentType = require('content-type')
 var bodyParser = require('body-parser')
 var multer = require('multer')
-
 var upload = multer({
   dest: 'db/image',
   fileFilter: function (req, file, cb) {
-    if (file.mimetype != 'image/jpeg') {
-      cb(null, false)
-    } else {
-      cb(null, true)
-    }
+    cb(null, file.mimetype == 'image/jpeg')
   }
 })
 
@@ -42,7 +38,6 @@ function all(req, res) {
     errors: [],
     data: db.all()
   }
-  /* Support both a request for JSON and a request for HTML  */
   res.format({
     json: () => res.json(result),
     html: () => res.render('list.ejs', Object.assign({}, result, helpers))
@@ -52,13 +47,12 @@ function all(req, res) {
 function get(req, res) {
   var id = req.params.id
   var has
-
   try {
     has = db.has(id)
   } catch (err) {
     onerror(400, res)
+    return
   }
-
   if (has) {
     var result = {
       data: db.get(id)
@@ -79,31 +73,17 @@ function addForm(req, res) {
 }
 
 function add(req, res) {
-  var newAnimal
-  if (req.headers['content-type'].split(';')[0] == 'multipart/form-data') {
-    newAnimal = {
-      name: req.body.name,
-      type: req.body.type,
-      description: req.body.description,
-      place: req.body.place,
-      intake: req.body.intake,
-      sex: req.body.sex,
-      age: parseInt(req.body.age, 10),
-      weight: parseInt(req.body.weight || '0', 10),
-      size: req.body.size,
-      length: req.body.length,
-      coat: req.body.coat,
-      vaccinated: req.body.vaccinated == '1',
-      declawed: req.body.declawed != undefined ?
-        req.body.declawed == '1' :
-        undefined,
-      primaryColor: req.body.primaryColor,
-      secondaryColor: req.body.secondaryColor == '' ?
-        undefined :
-        req.body.secondaryColor
-    }
-  } else {
-    newAnimal = req.body
+  var newAnimal = req.body
+  if (contentType.parse(req).type == 'multipart/form-data') {
+    newAnimal.declawed = newAnimal.declawed != undefined ?
+      newAnimal.declawed == '1' :
+      undefined
+    newAnimal.secondaryColor = newAnimal.secondaryColor == '' ?
+      undefined :
+      newAnimal.secondaryColor
+    newAnimal.vaccinated = newAnimal.vaccinated == '1'
+    newAnimal.weight = parseInt(newAnimal.weight || '0', 10)
+    newAnimal.age = parseInt(newAnimal.age, 10)
   }
   try {
     var addedAnimal = db.add(newAnimal)
@@ -155,9 +135,7 @@ function change(req, res) {
   try {
     if (db.has(id)) {
       var dbEntry = db.get(id)
-      for (var property in req.body) {
-        dbEntry[property] = req.body[property]
-      }
+      Object.assign(dbEntry, req.body)
       db.set(dbEntry)
       res.status(200).json({
         errors: [],
