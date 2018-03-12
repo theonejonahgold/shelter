@@ -1,15 +1,15 @@
 'use strict'
 
-var fs = require('fs')
-var express = require('express')
-var multer = require('multer')
-var HTTPStatus = require('http-status')
-var contentType = require('content-type')
-var bodyParser = require('body-parser')
-var db = require('../db')
-var helpers = require('./helpers')
+const fs = require('fs')
+const express = require('express')
+const multer = require('multer')
+const HTTPStatus = require('http-status')
+const contentType = require('content-type')
+const bodyParser = require('body-parser')
+const db = require('../db')
+const helpers = require('./helpers')
 
-var upload = multer({
+const upload = multer({
   dest: 'db/image',
   fileFilter: (req, file, cb) => cb(null, file.mimetype === 'image/jpeg')
 })
