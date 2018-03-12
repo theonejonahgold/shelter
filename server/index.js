@@ -36,7 +36,6 @@ module.exports = express()
 
 function all(req, res) {
   var result = {
-    errors: [],
     data: db.all()
   }
   res.format({
@@ -76,15 +75,13 @@ function addForm(req, res) {
 function add(req, res) {
   var newAnimal = req.body
   if (contentType.parse(req).type === 'multipart/form-data') {
-    newAnimal.declawed = newAnimal.declawed ?
-      newAnimal.declawed === '1' :
-      undefined
-    newAnimal.secondaryColor = newAnimal.secondaryColor === '' ?
+    newAnimal.age = parseInt(newAnimal.age, 10)
+    newAnimal.weight = parseInt(newAnimal.weight || '0', 10)
+    newAnimal.vaccinated = !!newAnimal.vaccinated
+    newAnimal.declawed = !!newAnimal.declawed
+    newAnimal.secondaryColor = !newAnimal.secondaryColor ?
       undefined :
       newAnimal.secondaryColor
-    newAnimal.vaccinated = newAnimal.vaccinated === '1'
-    newAnimal.weight = parseInt(newAnimal.weight || '0', 10)
-    newAnimal.age = parseInt(newAnimal.age, 10)
   }
   try {
     var addedAnimal = db.add(newAnimal)
@@ -120,7 +117,6 @@ function set(req, res) {
       }
       db.set(req.body)
       res.status(resStatus).json({
-        errors: [],
         data: db.get(bodyId)
       })
     } catch (err) {
@@ -139,7 +135,6 @@ function change(req, res) {
       Object.assign(dbEntry, req.body)
       db.set(dbEntry)
       res.status(200).json({
-        errors: [],
         data: db.get(id)
       })
     } else if (db.removed(id)) {
