@@ -53,7 +53,7 @@ function get(req, res) {
     onerror([400], res)
     return
   }
-  if (has) {
+  has ? (function () {
     var result = {
       data: db.get(id)
     }
@@ -61,11 +61,10 @@ function get(req, res) {
       json: () => res.json(result),
       html: () => res.render('detail.ejs', Object.assign({}, result, helpers))
     })
-  } else if (db.removed(id)) {
-    onerror([410], res)
-  } else {
+  })() :
+  db.removed(id) ?
+    onerror([410], res) :
     onerror([404], res)
-  }
 }
 
 function addForm(req, res) {
@@ -77,71 +76,57 @@ function add(req, res) {
   if (contentType.parse(req).type === 'multipart/form-data') {
     newAnimal.age = parseInt(newAnimal.age, 10)
     newAnimal.weight = parseInt(newAnimal.weight || '0', 10)
-    newAnimal.vaccinated = !!newAnimal.vaccinated
-    newAnimal.declawed = !!newAnimal.declawed
-    newAnimal.secondaryColor = !newAnimal.secondaryColor ?
-      undefined :
-      newAnimal.secondaryColor
+    newAnimal.vaccinated = Boolean(newAnimal.vaccinated)
+    newAnimal.declawed = Boolean(newAnimal.declawed)
+    newAnimal.secondaryColor = newAnimal.secondaryColor || undefined
   }
   try {
     var addedAnimal = db.add(newAnimal)
-    if (req.file) {
-      fs.rename(req.file.path, `db/image/${addedAnimal.id}.jpg`)
-    }
+    req.file ? fs.rename(req.file.path, `db/image/${addedAnimal.id}.jpg`) : null
     res.redirect('/' + addedAnimal.id)
   } catch (err) {
-    if (req.file) {
+    req.file ?
       fs.unlink(req.file.path, function (err) {
-        if (err) {
-          onerror([500], res)
-        } else {
-          onerror([422], res)
-        }
-      })
-    } else {
-      onerror([422], res)
-    }
+        err ? onerror([500], res) : onerror([422], res)
+      }) : onerror([422], res)
   }
 }
 
 function set(req, res) {
   var paramId = req.params.id
   var bodyId = req.body.id
-  if (paramId === bodyId) {
-    var resStatus
-    try {
-      if (db.has(bodyId)) {
-        resStatus = 200
-      } else {
-        resStatus = 201
+  paramId === bodyId ?
+    (function () {
+      var resStatus
+      try {
+        db.has(bodyId) ?
+          resStatus = 200 :
+          resStatus = 201
+        db.set(req.body)
+        res.status(resStatus).json({
+          data: db.get(bodyId)
+        })
+      } catch (err) {
+        onerror([422], res)
       }
-      db.set(req.body)
-      res.status(resStatus).json({
-        data: db.get(bodyId)
-      })
-    } catch (err) {
-      onerror([422], res)
-    }
-  } else {
+    })() :
     onerror([400], res)
-  }
 }
 
 function change(req, res) {
   var id = req.params.id
   try {
-    if (db.has(id)) {
+    db.has(id) ? (function () {
       var dbEntry = db.get(id)
       Object.assign(dbEntry, req.body)
       db.set(dbEntry)
       res.status(200).json({
         data: db.get(id)
       })
-    } else if (db.removed(id)) {
-      onerror([410], res)
-    } else {
+    })() :
+    db.removed(id) ?
+      onerror([410], res) :
       onerror([404], res)
-    }
   } catch (err) {
     onerror([422], res)
   }
@@ -152,17 +137,13 @@ function remove(req, res) {
   try {
     db.remove(id)
     fs.unlink(`db/image/${id}.jpg`, function (err) {
-      if (err) {
-        onerror([500], res)
-      }
+      err && onerror([500], res)
     })
     res.status(204).end()
   } catch (err) {
-    if (db.removed(id)) {
-      onerror([410], res)
-    } else {
+    db.removed(id) ?
+      onerror([410], res) :
       onerror([404], res)
-    }
   }
 }
 
