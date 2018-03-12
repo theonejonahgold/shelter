@@ -2,16 +2,17 @@
 
 var fs = require('fs')
 var express = require('express')
-var db = require('../db')
-var helpers = require('./helpers')
+var multer = require('multer')
 var HTTPStatus = require('http-status')
 var contentType = require('content-type')
 var bodyParser = require('body-parser')
-var multer = require('multer')
+var db = require('../db')
+var helpers = require('./helpers')
+
 var upload = multer({
   dest: 'db/image',
   fileFilter: function (req, file, cb) {
-    cb(null, file.mimetype == 'image/jpeg')
+    cb(null, file.mimetype === 'image/jpeg')
   }
 })
 
@@ -50,7 +51,7 @@ function get(req, res) {
   try {
     has = db.has(id)
   } catch (err) {
-    onerror(400, res)
+    onerror([400], res)
     return
   }
   if (has) {
@@ -62,9 +63,9 @@ function get(req, res) {
       html: () => res.render('detail.ejs', Object.assign({}, result, helpers))
     })
   } else if (db.removed(id)) {
-    onerror(410, res)
+    onerror([410], res)
   } else {
-    onerror(404, res)
+    onerror([404], res)
   }
 }
 
@@ -74,14 +75,14 @@ function addForm(req, res) {
 
 function add(req, res) {
   var newAnimal = req.body
-  if (contentType.parse(req).type == 'multipart/form-data') {
-    newAnimal.declawed = newAnimal.declawed != undefined ?
-      newAnimal.declawed == '1' :
+  if (contentType.parse(req).type === 'multipart/form-data') {
+    newAnimal.declawed = newAnimal.declawed ?
+      newAnimal.declawed === '1' :
       undefined
-    newAnimal.secondaryColor = newAnimal.secondaryColor == '' ?
+    newAnimal.secondaryColor = newAnimal.secondaryColor === '' ?
       undefined :
       newAnimal.secondaryColor
-    newAnimal.vaccinated = newAnimal.vaccinated == '1'
+    newAnimal.vaccinated = newAnimal.vaccinated === '1'
     newAnimal.weight = parseInt(newAnimal.weight || '0', 10)
     newAnimal.age = parseInt(newAnimal.age, 10)
   }
@@ -95,13 +96,13 @@ function add(req, res) {
     if (req.file) {
       fs.unlink(req.file.path, function (err) {
         if (err) {
-          onerror(500, res)
+          onerror([500], res)
         } else {
-          onerror(422, res)
+          onerror([422], res)
         }
       })
     } else {
-      onerror(422, res)
+      onerror([422], res)
     }
   }
 }
@@ -109,7 +110,7 @@ function add(req, res) {
 function set(req, res) {
   var paramId = req.params.id
   var bodyId = req.body.id
-  if (paramId == bodyId) {
+  if (paramId === bodyId) {
     var resStatus
     try {
       if (db.has(bodyId)) {
@@ -117,16 +118,16 @@ function set(req, res) {
       } else {
         resStatus = 201
       }
-      var setAnimal = db.set(req.body)
+      db.set(req.body)
       res.status(resStatus).json({
         errors: [],
         data: db.get(bodyId)
       })
     } catch (err) {
-      onerror(422, res)
+      onerror([422], res)
     }
   } else {
-    onerror(400, res)
+    onerror([400], res)
   }
 }
 
@@ -142,12 +143,12 @@ function change(req, res) {
         data: db.get(id)
       })
     } else if (db.removed(id)) {
-      onerror(410, res)
+      onerror([410], res)
     } else {
-      onerror(404, res)
+      onerror([404], res)
     }
   } catch (err) {
-    onerror(422, res)
+    onerror([422], res)
   }
 }
 
@@ -157,29 +158,31 @@ function remove(req, res) {
     db.remove(id)
     fs.unlink(`db/image/${id}.jpg`, function (err) {
       if (err) {
-        onerror(500, res)
-        return
+        onerror([500], res)
       }
     })
     res.status(204).end()
   } catch (err) {
     if (db.removed(id)) {
-      onerror(410, res)
+      onerror([410], res)
     } else {
-      onerror(404, res)
+      onerror([404], res)
     }
   }
 }
 
-function onerror(errCode, res) {
+function onerror(errCodes, res) {
   var errObj = {
-    errors: [{
-      id: errCode,
-      title: HTTPStatus[errCode]
-    }]
+    errors: errCodes.map(err => {
+      return {
+        id: err,
+        title: HTTPStatus[err],
+        detail: 'All is well, cat is going to sleep now..'
+      }
+    })
   }
   res.format({
-    json: () => res.status(errCode).json(errObj.errors),
+    json: () => res.json(errObj),
     html: () => res.render('error.ejs', Object.assign({}, errObj, helpers))
   })
 }
