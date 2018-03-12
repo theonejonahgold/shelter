@@ -168,7 +168,6 @@ function remove(req, res) {
     } else {
       onerror(404, res)
     }
-    return
   }
 }
 
