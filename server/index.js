@@ -9,6 +9,8 @@ var bodyParser = require('body-parser')
 var db = require('../db')
 var helpers = require('./helpers')
 
+require('dotenv').config()
+
 var upload = multer({
   dest: 'db/image',
   fileFilter: function (req, file, cb) {
