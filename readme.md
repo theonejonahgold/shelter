@@ -50,6 +50,13 @@ view/error.ejs - ejs template for errors
 *   `npm run lint` — Check browser code and node code for problems
 *   `npm run build` — Build browser code
 
+
+## Database
+
+This project uses MYSQL for data management.
+A database dump can be found in the root of the project.
+Here is an overview of how the database is put together
+![Database structure of Shelter](db_structure.png)
 ## Data
 
 Data is crawled (by `build.js`) from [nycacc][].
