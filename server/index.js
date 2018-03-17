@@ -11,12 +11,13 @@ var mysql = require('mysql')
 var db = require('../db')
 var helpers = require('./helpers')
 require('dotenv').config()
+
 var connection = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-
+  multipleStatements: true
 })
 
 connection.connect()
@@ -27,6 +28,16 @@ var upload = multer({
     cb(null, file.mimetype === 'image/jpeg')
   }
 })
+
+var joins = (table) => `
+  LEFT JOIN sex ON ${table}.sex IS NOT NULL AND ${table}.sex = sex.sex_id
+  LEFT JOIN locations ON ${table}.place IS NOT NULL AND ${table}.place = locations.location_id
+  LEFT JOIN lengths ON ${table}.length IS NOT NULL AND ${table}.length = lengths.length_id
+  LEFT JOIN coats ON ${table}.coat IS NOT NULL AND ${table}.coat = coats.coat_id
+  LEFT JOIN sizes ON ${table}.size IS NOT NULL AND ${table}.size = sizes.size_id
+  LEFT JOIN types ON ${table}.type IS NOT NULL AND ${table}.type = types.type_id
+  LEFT JOIN images ON ${table}.image IS NOT NULL AND ${table}.image = images.image_id
+`
 
 module.exports = express()
   .set('view engine', 'ejs')
@@ -47,14 +58,15 @@ module.exports = express()
   .listen(1902)
 
 function all(req, res, next) {
-  var result
-  connection.query('SELECT * FROM animals', done)
+  connection.query(`SELECT * FROM animals ${joins('animals')}`, done)
 
   function done(err, data) {
     if (err) {
+      console.dir(err)
       onerror([500], res)
     } else {
-      result = {
+      console.log(data)
+      var result = {
         data: data
       }
       res.format({
@@ -67,7 +79,7 @@ function all(req, res, next) {
 
 function get(req, res, next) {
   var id = req.params.id
-  connection.query(`SELECT * FROM animals WHERE id = ${id}`, done)
+  connection.query(`SELECT * FROM animals ${joins('animals')} WHERE animals.id = ${id}`, done)
 
   function done(err, data) {
     if (err) {
@@ -75,7 +87,7 @@ function get(req, res, next) {
         onerror([400], res)
       }
     } else if (!data.length) {
-        onerror([404], res)
+      onerror([404], res)
     } else {
       var result = {
         data: data[0]
@@ -89,10 +101,27 @@ function get(req, res, next) {
 }
 
 function addForm(req, res) {
-  res.render('add.ejs')
+  connection.query(`
+  SELECT * FROM sex as sex;
+  SELECT * FROM coats as coats;
+  SELECT * FROM lengths as lengths;
+  SELECT * FROM locations as locations;
+  SELECT * FROM sizes as sizes`, done)
+
+  function done(err, data) {
+    if (err) {
+      console.error(err)
+      onerror([500], res)
+    } else {
+      var result = {
+        data: data
+      }
+      res.render('add.ejs', Object.assign({}, result, helpers))
+    }
+  }
 }
 
-function add(req, res) {
+function add(req, res, next) {
   var newAnimal = req.body
   if (contentType.parse(req).type === 'multipart/form-data') {
     newAnimal.intake = moment(newAnimal.intake, 'DD-MM-YYY').format('YYYY-MM-DD')
@@ -102,46 +131,49 @@ function add(req, res) {
 
   function done(err, entry) {
     if (err) {
-      next(err)
-      console.dir(err)
-    } else {
-      if (req.file) {
-        fs.rename(req.file.path, `db/image/${entry.id}.jpg`)
-        connection.query('INSERT INTO images SET ?', {
-          name: entry.id + '.jpg',
-          mime: req.file.mimetype
-        }, done)
-        function done(err, data) {
-          if (err) {
-            console.dir(err)
-            next(err)
+      onerror([422], res)
+    } else if (req.file) {
+      connection.query(`SELECT * from animals ORDER BY animals.id DESC LIMIT 1`, fetched)
+
+      function fetched(err, entry) {
+        if (err) {
+          console.error(err)
+        } else {
+          fs.rename(req.file.path, `db/image/${entry[0].name}_${entry[0].type}${entry[0].place}.jpg`)
+          connection.query('INSERT INTO images SET ?', {
+            file: `${entry[0].name}_${entry[0].type}${entry[0].place}.jpg`,
+            mime: req.file.mimetype
+          }, done)
+
+          function done(err, data) {
+            if (err) {
+              fs.unlink(`${entry[0].name}_${entry[0].type}${entry[0].place}.jpg`, function (err) {
+                if (err) {
+                  onerror([500], res)
+                } else {
+                  onerror([422], res)
+                }
+              })
+            } else {
+              console.log(entry[0])
+              connection.query(`UPDATE animals SET image = LAST_INSERT_ID() WHERE animals.id = ${entry[0].id}`, function(err) {
+                if (err) {
+                  console.error(err)
+                } else {
+                  res.redirect(`/${entry[0].id}`)
+                }
+              })
+            }
           }
-          res.redirect(`/${entry.id}`)
         }
-        return
       }
-      res.redirect(`/${entry.id}`)
+    } else {
+      connection.query('SELECT LAST_INSERT_ID()', fetched)
+      function fetched(err, entry) {
+        res.redirect(`/${entry[0]['LAST_INSERT_ID()']}`)
+      }
     }
   }
-  // try {
-  //   var addedAnimal = db.add(newAnimal)
-  //   if (req.file) {
-  //     fs.rename(req.file.path, `db/image/${addedAnimal.id}.jpg`)
-  //   }
-  //   res.redirect('/' + addedAnimal.id)
-  // } catch (err) {
-  //   if (req.file) {
-  //     fs.unlink(req.file.path, function (err) {
-  //       if (err) {
-  //         onerror([500], res)
-  //       } else {
-  //         onerror([422], res)
-  //       }
-  //     })
-  //   } else {
-  //     onerror([422], res)
-  //   }
-  // }
 }
 
 function set(req, res) {

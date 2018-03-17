@@ -1,5 +1,7 @@
 'use strict'
 
+exports.moment = require('moment')
+
 exports.description = description
 exports.plural = plural
 
@@ -11,7 +13,7 @@ function description(data) {
     return data.description
   }
 
-  value = data.name + ' is a ' + data.primaryColor
+  value = data.name + ' is a ' + data.primary_color
 
   if (data.secondaryColor) {
     value += ' (with ' + data.secondaryColor + ')'

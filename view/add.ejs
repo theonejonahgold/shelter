@@ -15,6 +15,24 @@
       <input type="text" name="name" required>
     </label>
     <label>
+      Description
+      <textarea name="description" cols="30"></textarea>
+    </label>
+    <label>
+      Date of intake*
+      <input type="date" name="intake" required>
+    </label>
+    <% data.forEach(function(propertyType) { %>
+      <% propertyType.forEach(function(option) { %>
+        <% switch (Object.keys(option)[1]) {
+          case 'sex': %>
+          <% break
+          case 'coat': %>
+          <% break
+        } %>
+      <% }) %>
+    <% }) %>
+    <label>
       Animal type*
       <select name="type" required>
         <option value="1">Dog</option>
@@ -23,20 +41,12 @@
       </select>
     </label>
     <label>
-      Description
-      <textarea name="description" cols="30"></textarea>
-    </label>
-    <label>
       Animal Shelter*
       <select name="place" required>
         <option value="1">Brooklyn Animal Care Center</option>
         <option value="2">Manhattan Animal Care Center</option>
         <option value="3">Staten Island Animal Care Center</option>
       </select>
-    </label>
-    <label>
-      Date of intake*
-      <input type="date" name="intake" required>
     </label>
     <fieldset>
       <legend>Sex*</legend>

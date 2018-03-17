@@ -13,7 +13,7 @@
   </aside>
   <figure class=frame>
     <div class=frame-image>
-      <img src="/image/<%= data.id %>.jpg" alt>
+      <img src="/image/<%= data.file %>" alt>
     </div>
     <figcaption>
       <p><%= description(data) %></p>
@@ -24,24 +24,25 @@
       Object.keys(data).forEach(function (key) {
         var value = data[key]
         if (key == 'name' || key == 'description' || key == 'id') return
-        if (key == 'primaryColor') key = 'primary color'
-        if (key == 'secondaryColor') key = 'secondary color'
+        if (key == 'primary_color') key = 'primary color'
+        if (key == 'secondary_color') key = 'secondary color'
+        if (key == 'mime' || key == 'file') return
         if (value === null || value === undefined) return
     %>
       <dt><%= key %></dt>
     <% if (value == true) { %>
       <dd>Yes</dd>
-    <% } else if (value == false) { %>
-      <dd>No</dd>
     <% } else if (key == 'weight') { %>
       <dd><%= value %> <%= plural('kilogram', value) %></dd>
     <% } else if (key == 'age') { %>
       <dd><%= value %> <%= plural('year', value) %></dd>
     <% } else if (key == 'intake') { %>
       <dd>
-        <time datetime="<%= value %>"><%= value %></time>
+        <time datetime="<%= moment(value).format('YYYY-MM-DD') %>"><%= moment(value).format('YYYY-MM-DD') %></time>
       </dd>
-    <% } else { %>
+    <% } else if (value == false) { %>
+      <dd>No</dd>
+    <% } else if (key != 'mime' && key != 'file') { %>
       <dd><%= value %></dd>
     <% } %>
     <% }); %>
