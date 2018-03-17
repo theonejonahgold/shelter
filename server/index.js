@@ -6,6 +6,7 @@ var multer = require('multer')
 var HTTPStatus = require('http-status')
 var contentType = require('content-type')
 var bodyParser = require('body-parser')
+var moment = require('moment')
 var mysql = require('mysql')
 var db = require('../db')
 var helpers = require('./helpers')
@@ -77,7 +78,7 @@ function get(req, res, next) {
         onerror([404], res)
     } else {
       var result = {
-        data: data
+        data: data[0]
       }
       res.format({
         json: () => res.json(result),
@@ -94,33 +95,53 @@ function addForm(req, res) {
 function add(req, res) {
   var newAnimal = req.body
   if (contentType.parse(req).type === 'multipart/form-data') {
-    newAnimal.age = parseInt(newAnimal.age, 10)
-    newAnimal.weight = parseInt(newAnimal.weight || '0', 10)
-    newAnimal.vaccinated = !!newAnimal.vaccinated
-    newAnimal.declawed = !!newAnimal.declawed
-    newAnimal.secondaryColor = !newAnimal.secondaryColor ?
-      undefined :
-      newAnimal.secondaryColor
+    newAnimal.intake = moment(newAnimal.intake, 'DD-MM-YYY').format('YYYY-MM-DD')
+    newAnimal.weight = parseFloat(newAnimal.weight) || 0
   }
-  try {
-    var addedAnimal = db.add(newAnimal)
-    if (req.file) {
-      fs.rename(req.file.path, `db/image/${addedAnimal.id}.jpg`)
-    }
-    res.redirect('/' + addedAnimal.id)
-  } catch (err) {
-    if (req.file) {
-      fs.unlink(req.file.path, function (err) {
-        if (err) {
-          onerror([500], res)
-        } else {
-          onerror([422], res)
-        }
-      })
+  connection.query('INSERT INTO animals SET ?', newAnimal, done)
+
+  function done(err, entry) {
+    if (err) {
+      next(err)
+      console.dir(err)
     } else {
-      onerror([422], res)
+      if (req.file) {
+        fs.rename(req.file.path, `db/image/${entry.id}.jpg`)
+        connection.query('INSERT INTO images SET ?', {
+          name: entry.id + '.jpg',
+          mime: req.file.mimetype
+        }, done)
+        function done(err, data) {
+          if (err) {
+            console.dir(err)
+            next(err)
+          }
+          res.redirect(`/${entry.id}`)
+        }
+        return
+      }
+      res.redirect(`/${entry.id}`)
     }
   }
+  // try {
+  //   var addedAnimal = db.add(newAnimal)
+  //   if (req.file) {
+  //     fs.rename(req.file.path, `db/image/${addedAnimal.id}.jpg`)
+  //   }
+  //   res.redirect('/' + addedAnimal.id)
+  // } catch (err) {
+  //   if (req.file) {
+  //     fs.unlink(req.file.path, function (err) {
+  //       if (err) {
+  //         onerror([500], res)
+  //       } else {
+  //         onerror([422], res)
+  //       }
+  //     })
+  //   } else {
+  //     onerror([422], res)
+  //   }
+  // }
 }
 
 function set(req, res) {
