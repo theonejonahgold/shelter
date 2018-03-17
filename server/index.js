@@ -6,10 +6,19 @@ var multer = require('multer')
 var HTTPStatus = require('http-status')
 var contentType = require('content-type')
 var bodyParser = require('body-parser')
+var mysql = require('mysql')
 var db = require('../db')
 var helpers = require('./helpers')
-
 require('dotenv').config()
+var connection = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+
+})
+
+connection.connect()
 
 var upload = multer({
   dest: 'db/image',
@@ -36,37 +45,45 @@ module.exports = express()
   .delete('/:id', remove)
   .listen(1902)
 
-function all(req, res) {
-  var result = {
-    data: db.all()
+function all(req, res, next) {
+  var result
+  connection.query('SELECT * FROM animals', done)
+
+  function done(err, data) {
+    if (err) {
+      onerror([500], res)
+    } else {
+      result = {
+        data: data
+      }
+      res.format({
+        json: () => res.json(result),
+        html: () => res.render('list.ejs', Object.assign({}, result, helpers))
+      })
+    }
   }
-  res.format({
-    json: () => res.json(result),
-    html: () => res.render('list.ejs', Object.assign({}, result, helpers))
-  })
 }
 
-function get(req, res) {
+function get(req, res, next) {
   var id = req.params.id
-  var has
-  try {
-    has = db.has(id)
-  } catch (err) {
-    onerror([400], res)
-    return
-  }
-  if (has) {
-    var result = {
-      data: db.get(id)
+  connection.query(`SELECT * FROM animals WHERE id = ${id}`, done)
+
+  function done(err, data) {
+    if (err) {
+      if (err.code == 'ER_PARSE_ERROR') {
+        onerror([400], res)
+      }
+    } else if (!data.length) {
+        onerror([404], res)
+    } else {
+      var result = {
+        data: data
+      }
+      res.format({
+        json: () => res.json(result),
+        html: () => res.render('detail.ejs', Object.assign({}, result, helpers))
+      })
     }
-    res.format({
-      json: () => res.json(result),
-      html: () => res.render('detail.ejs', Object.assign({}, result, helpers))
-    })
-  } else if (db.removed(id)) {
-    onerror([410], res)
-  } else {
-    onerror([404], res)
   }
 }
 
