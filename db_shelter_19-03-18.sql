@@ -7,7 +7,7 @@
 #
 # Host: localhost (MySQL 5.7.21)
 # Database: shelter
-# Generation Time: 2018-03-17 11:47:19 +0000
+# Generation Time: 2018-03-19 20:52:45 +0000
 # ************************************************************
 
 
@@ -28,6 +28,7 @@ DROP TABLE IF EXISTS `animals`;
 CREATE TABLE `animals` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(191) NOT NULL DEFAULT '',
+  `slug` varchar(191) NOT NULL DEFAULT '',
   `description` varchar(191) DEFAULT NULL,
   `type` int(11) unsigned NOT NULL,
   `place` int(11) unsigned NOT NULL,
@@ -42,19 +43,22 @@ CREATE TABLE `animals` (
   `declawed` tinyint(1) DEFAULT NULL,
   `primary_color` varchar(191) NOT NULL DEFAULT '',
   `secondary_color` varchar(191) DEFAULT NULL,
+  `image` int(11) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `animal_type` (`type`),
+  KEY `animal_place` (`place`),
   KEY `animal_sex` (`sex`),
   KEY `animal_size` (`size`),
   KEY `animal_length` (`length`),
   KEY `animal_coat` (`coat`),
-  KEY `animal_place` (`place`),
-  CONSTRAINT `animal_coat` FOREIGN KEY (`coat`) REFERENCES `coats` (`id`),
-  CONSTRAINT `animal_length` FOREIGN KEY (`length`) REFERENCES `lengths` (`id`),
+  KEY `animal_image` (`image`),
+  CONSTRAINT `animal_coat` FOREIGN KEY (`coat`) REFERENCES `coats` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `animal_image` FOREIGN KEY (`image`) REFERENCES `images` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION,
+  CONSTRAINT `animal_length` FOREIGN KEY (`length`) REFERENCES `lengths` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `animal_place` FOREIGN KEY (`place`) REFERENCES `locations` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `animal_sex` FOREIGN KEY (`sex`) REFERENCES `sex` (`id`),
-  CONSTRAINT `animal_size` FOREIGN KEY (`size`) REFERENCES `sizes` (`id`),
-  CONSTRAINT `animal_type` FOREIGN KEY (`type`) REFERENCES `types` (`id`)
+  CONSTRAINT `animal_sex` FOREIGN KEY (`sex`) REFERENCES `sex` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `animal_size` FOREIGN KEY (`size`) REFERENCES `sizes` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `animal_type` FOREIGN KEY (`type`) REFERENCES `types` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -66,20 +70,34 @@ DROP TABLE IF EXISTS `coats`;
 
 CREATE TABLE `coats` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(191) NOT NULL DEFAULT '',
+  `coat` varchar(191) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 LOCK TABLES `coats` WRITE;
 /*!40000 ALTER TABLE `coats` DISABLE KEYS */;
 
-INSERT INTO `coats` (`id`, `name`)
+INSERT INTO `coats` (`id`, `coat`)
 VALUES
 	(1,'smooth'),
 	(2,'thick');
 
 /*!40000 ALTER TABLE `coats` ENABLE KEYS */;
 UNLOCK TABLES;
+
+
+# Dump of table images
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `images`;
+
+CREATE TABLE `images` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `file` varchar(191) NOT NULL DEFAULT '',
+  `mime` varchar(191) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 
 
 # Dump of table lengths
@@ -89,55 +107,20 @@ DROP TABLE IF EXISTS `lengths`;
 
 CREATE TABLE `lengths` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(191) NOT NULL DEFAULT '',
+  `length` varchar(191) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 LOCK TABLES `lengths` WRITE;
 /*!40000 ALTER TABLE `lengths` DISABLE KEYS */;
 
-INSERT INTO `lengths` (`id`, `name`)
+INSERT INTO `lengths` (`id`, `length`)
 VALUES
 	(1,'short'),
 	(2,'medium'),
 	(3,'long');
 
 /*!40000 ALTER TABLE `lengths` ENABLE KEYS */;
-UNLOCK TABLES;
-
-
-# Dump of table location_type_permission
-# ------------------------------------------------------------
-
-DROP TABLE IF EXISTS `location_type_permission`;
-
-CREATE TABLE `location_type_permission` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `location_id` int(11) unsigned NOT NULL,
-  `type_id` int(11) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `location` (`location_id`),
-  KEY `type` (`type_id`),
-  CONSTRAINT `location` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `type` FOREIGN KEY (`type_id`) REFERENCES `types` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
-
-LOCK TABLES `location_type_permission` WRITE;
-/*!40000 ALTER TABLE `location_type_permission` DISABLE KEYS */;
-
-INSERT INTO `location_type_permission` (`id`, `location_id`, `type_id`)
-VALUES
-	(2,1,1),
-	(3,1,2),
-	(4,1,3),
-	(5,2,1),
-	(6,2,2),
-	(7,2,3),
-	(8,3,1),
-	(9,3,2),
-	(10,3,3);
-
-/*!40000 ALTER TABLE `location_type_permission` ENABLE KEYS */;
 UNLOCK TABLES;
 
 
@@ -148,21 +131,21 @@ DROP TABLE IF EXISTS `locations`;
 
 CREATE TABLE `locations` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(191) NOT NULL DEFAULT '',
+  `location` varchar(191) NOT NULL DEFAULT '',
   `capacity` int(11) DEFAULT NULL,
   `street` varchar(191) DEFAULT NULL,
-  `postal code` char(11) DEFAULT NULL,
+  `postal_code` char(11) DEFAULT NULL,
   `city` varchar(191) DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 LOCK TABLES `locations` WRITE;
 /*!40000 ALTER TABLE `locations` DISABLE KEYS */;
 
-INSERT INTO `locations` (`id`, `name`, `capacity`, `street`, `postal code`, `city`)
+INSERT INTO `locations` (`id`, `location`, `capacity`, `street`, `postal_code`, `city`)
 VALUES
 	(1,'Brooklyn Animal Care Center',NULL,NULL,NULL,'Brooklyn'),
-	(2,'Manhatten Animal Care Center',NULL,NULL,NULL,'Manhatten'),
+	(2,'Manhattan Animal Care Center',NULL,'326 E 110th St','10029','Manhatten'),
 	(3,'Staten Island Animal Care Center',NULL,NULL,NULL,'Staten Island');
 
 /*!40000 ALTER TABLE `locations` ENABLE KEYS */;
@@ -176,14 +159,14 @@ DROP TABLE IF EXISTS `sex`;
 
 CREATE TABLE `sex` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(191) NOT NULL DEFAULT '',
+  `sex` varchar(191) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 LOCK TABLES `sex` WRITE;
 /*!40000 ALTER TABLE `sex` DISABLE KEYS */;
 
-INSERT INTO `sex` (`id`, `name`)
+INSERT INTO `sex` (`id`, `sex`)
 VALUES
 	(1,'male'),
 	(2,'female');
@@ -199,14 +182,14 @@ DROP TABLE IF EXISTS `sizes`;
 
 CREATE TABLE `sizes` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(191) NOT NULL DEFAULT '',
+  `size` varchar(191) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 LOCK TABLES `sizes` WRITE;
 /*!40000 ALTER TABLE `sizes` DISABLE KEYS */;
 
-INSERT INTO `sizes` (`id`, `name`)
+INSERT INTO `sizes` (`id`, `size`)
 VALUES
 	(1,'small'),
 	(2,'medium'),
@@ -223,14 +206,14 @@ DROP TABLE IF EXISTS `types`;
 
 CREATE TABLE `types` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(20) NOT NULL DEFAULT '',
+  `type` varchar(20) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 LOCK TABLES `types` WRITE;
 /*!40000 ALTER TABLE `types` DISABLE KEYS */;
 
-INSERT INTO `types` (`id`, `name`)
+INSERT INTO `types` (`id`, `type`)
 VALUES
 	(1,'dog'),
 	(2,'cat'),
