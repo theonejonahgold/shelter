@@ -104,6 +104,7 @@ function get(req, res, next) {
 function addForm(req, res) {
   connection.query(`
     SELECT * FROM sex as sex;
+    SELECT * FROM types as types;
     SELECT * FROM locations as locations;
     SELECT * FROM lengths as lengths;
     SELECT * FROM sizes as sizes;
@@ -159,7 +160,8 @@ function add(req, res, next) {
               })
             } else {
               console.log(entry[0])
-              connection.query(`UPDATE animals SET image = LAST_INSERT_ID() WHERE animals.id = ${entry[0].id}`, function(err) {
+              connection.query('UPDATE animals SET image = LAST_INSERT_ID() WHERE animals.id = ?', entry[0].id, function (err) {
+
                 if (err) {
                   console.error(err)
                 } else {
@@ -224,23 +226,36 @@ function change(req, res) {
 
 function remove(req, res) {
   var slug = req.params.slug
-  connection.query(`SELECT * FROM animals ${joins('animals')} WHERE animals.slug = '${slug}'`, function(err, result) {
-    console.log(result)
+  connection.query(`SELECT * FROM animals ${joins('animals')} WHERE animals.slug = ?`, slug, function(err, result) {
+    console.log('delete result:', result)
     if (err) {
       console.error(err)
+      onerror([500], res)
+    } else if (!result.length) {
+      onerror([404], res)
     } else if (result[0].file) {
-      fs.unlink('db/image/' + result[0].file)
-      connection.query(`
-        DELETE FROM images where images.id = ${result[0].id};
-        DELETE FROM animals where animals.slug = ${slug};
-      `, function(err) {
+      fs.unlink('db/image/' + result[0].file, function(err) {
         if (err) {
           console.error(err)
           onerror([500], res)
+        } else {
+          connection.query('DELETE FROM animals where animals.id = ?', result[0].id, function(err) {
+            if (err) {
+              onerror([500], res)
+            } else {
+              res.status(204).json()
+            }
+          })
         }
       })
     } else {
-      connection.query(`DELETE FROM animals where animals.slug = ${slug}`)
+      connection.query(`DELETE FROM animals where animals.slug = ?`, slug, function(err) {
+        if (err) {
+          onerror([500], res)
+        } else {
+          console.log('hoi')
+        }
+      })
     }
   })
 }
@@ -256,7 +271,7 @@ function onerror(errCodes, res) {
     })
   }
   res.format({
-    json: () => res.json(errObj),
-    html: () => res.render('error.ejs', Object.assign({}, errObj, helpers))
+    json: () => res.status(errObj.errors[0].id).json(errObj),
+    html: () => res.status(errObj.errors[0].id).render('error.ejs', Object.assign({}, errObj, helpers))
   })
 }

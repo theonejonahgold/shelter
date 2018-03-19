@@ -23,6 +23,7 @@
       <input type="date" name="intake" required>
     </label>
     <% data.forEach(function(propertyType) { %>
+      <%= Object.keys(propertyType[0])[1] %>
       <% switch (Object.keys(propertyType[0])[1]) {
           case 'sex': %>
             <fieldset>
@@ -46,12 +47,12 @@
               <% }) %>
             </fieldset>
           <% break
-          case 'types': %>
+          case 'type': %>
             <label>
               Animal type*
               <select name="type" required>
                 <% propertyType.forEach(function (option) { %>
-                  <option value="<%= option['id'] %>"><%= option['type'] %></option>
+                  <option class="capitalize" value="<%= option['id'] %>"><%= option['type'] %></option>
                 <% }) %>
               </select>
             </label>
