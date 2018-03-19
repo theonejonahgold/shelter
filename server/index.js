@@ -30,12 +30,12 @@ var upload = multer({
 })
 
 var joins = (table) => `
-  LEFT JOIN sex ON ${table}.sex IS NOT NULL AND ${table}.sex = sex.id
-  LEFT JOIN locations ON ${table}.place IS NOT NULL AND ${table}.place = locations.id
+  LEFT JOIN sex ON ${table}.sex = sex.id
+  LEFT JOIN locations ON ${table}.place = locations.id
+  LEFT JOIN types ON ${table}.type = types.id
   LEFT JOIN lengths ON ${table}.length IS NOT NULL AND ${table}.length = lengths.id
   LEFT JOIN coats ON ${table}.coat IS NOT NULL AND ${table}.coat = coats.id
   LEFT JOIN sizes ON ${table}.size IS NOT NULL AND ${table}.size = sizes.id
-  LEFT JOIN types ON ${table}.type IS NOT NULL AND ${table}.type = types.id
   LEFT JOIN images ON ${table}.image IS NOT NULL AND ${table}.image = images.id
 `
 
