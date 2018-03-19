@@ -23,42 +23,84 @@
       <input type="date" name="intake" required>
     </label>
     <% data.forEach(function(propertyType) { %>
-      <% propertyType.forEach(function(option) { %>
-        <% switch (Object.keys(option)[1]) {
+      <% switch (Object.keys(propertyType[0])[1]) {
           case 'sex': %>
+            <fieldset>
+              <legend>Sex*</legend>
+              <% propertyType.forEach(function (option) { %>
+              <label class="capitalize">
+                <input type="radio" name="sex" value="<%= option['id'] %>">
+                <%= option['sex'] %>
+              </label>
+              <% }) %>
+            </fieldset>
           <% break
           case 'coat': %>
+            <fieldset>
+              <legend>Coat</legend>
+              <% propertyType.forEach(function (option) { %>
+                <label class="capitalize">
+                  <input type="radio" name="coat" value="<%= option['id'] %>">
+                  <%= option['coat'] %>
+                </label>
+              <% }) %>
+            </fieldset>
+          <% break
+          case 'types': %>
+            <label>
+              Animal type*
+              <select name="type" required>
+                <% propertyType.forEach(function (option) { %>
+                  <option value="<%= option['id'] %>"><%= option['type'] %></option>
+                <% }) %>
+              </select>
+            </label>
+          <% break
+          case 'location': %>
+            <label>
+              Animal Shelter*
+              <select name="place" required>
+                <% propertyType.forEach(function (option) { %>
+                  <option value="<%= option['id'] %>"><%= option['location'] %></option>
+                <% }) %>
+              </select>
+            </label>
+          <% break
+          case 'size': %>
+            <fieldset>
+              <legend>Size</legend>
+              <% propertyType.forEach(function (option) { %>
+                <label class="capitalize">
+                  <input type="radio" name="size" value="<%= option['id'] %>">
+                  <%= option['size'] %>
+                </label>
+              <% }) %>
+            </fieldset>
+          <% break
+          case 'length': %>
+            <fieldset>
+              <legend>Length</legend>
+              <% propertyType.forEach(function (option) { %>
+                <label class="capitalize">
+                  <input type="radio" name="length" value="<%= option['id'] %>">
+                  <%= option['length'] %>
+                </label>
+              <% }) %>
+            </fieldset>
+          <% break
+          case 'coat': %>
+            <fieldset>
+              <legend>Coat</legend>
+              <% propertyType.forEach(function (option) { %>
+                <label class="capitalize">
+                  <input type="radio" name="coat" value="<%= option['id'] %>">
+                  <%= option['coat'] %>
+                </label>
+              <% }) %>
+            </fieldset>
           <% break
         } %>
-      <% }) %>
     <% }) %>
-    <label>
-      Animal type*
-      <select name="type" required>
-        <option value="1">Dog</option>
-        <option value="2">Cat</option>
-        <option value="3">Rabbit</option>
-      </select>
-    </label>
-    <label>
-      Animal Shelter*
-      <select name="place" required>
-        <option value="1">Brooklyn Animal Care Center</option>
-        <option value="2">Manhattan Animal Care Center</option>
-        <option value="3">Staten Island Animal Care Center</option>
-      </select>
-    </label>
-    <fieldset>
-      <legend>Sex*</legend>
-      <label>
-        <input type="radio" name="sex" value="2" required>
-        Female
-      </label>
-      <label>
-        <input type="radio" name="sex" value="1" required>
-        Male
-      </label>
-    </fieldset>
     <label>
       Age in years*
       <input type="number" name="age" required>
@@ -67,48 +109,6 @@
       Weight
       <input type="number" name="weight" step="0.1">
     </label>
-    <fieldset>
-      <legend>Size</legend>
-      <label>
-        <input type="radio" name="size" value="1">
-        Small
-      </label>
-      <label>
-        <input type="radio" name="size" value="2">
-        Medium
-      </label>
-      <label>
-        <input type="radio" name="size" value="3">
-        Large
-      </label>
-    </fieldset>
-    <fieldset>
-      <legend>Length</legend>
-      <label>
-        <input type="radio" name="length" value="1">
-        Short
-      </label>
-      <label>
-        <input type="radio" name="length" value="2">
-        Medium
-      </label>
-      <label>
-        <input type="radio" name="length" value="3">
-        Long
-      </label>
-    </label>
-    </fieldset>
-    <fieldset>
-      <legend>Coat</legend>
-      <label>
-        <input type="radio" name="coat" value="1">
-        Smooth
-      </label>
-      <label>
-        <input type="radio" name="coat" value="2">
-        Thick
-      </label>
-    </fieldset>
     <fieldset>
       <legend>Vaccinated*</legend>
       <label>

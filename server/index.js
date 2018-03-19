@@ -30,13 +30,13 @@ var upload = multer({
 })
 
 var joins = (table) => `
-  LEFT JOIN sex ON ${table}.sex IS NOT NULL AND ${table}.sex = sex.sex_id
-  LEFT JOIN locations ON ${table}.place IS NOT NULL AND ${table}.place = locations.location_id
-  LEFT JOIN lengths ON ${table}.length IS NOT NULL AND ${table}.length = lengths.length_id
-  LEFT JOIN coats ON ${table}.coat IS NOT NULL AND ${table}.coat = coats.coat_id
-  LEFT JOIN sizes ON ${table}.size IS NOT NULL AND ${table}.size = sizes.size_id
-  LEFT JOIN types ON ${table}.type IS NOT NULL AND ${table}.type = types.type_id
-  LEFT JOIN images ON ${table}.image IS NOT NULL AND ${table}.image = images.image_id
+  LEFT JOIN sex ON ${table}.sex IS NOT NULL AND ${table}.sex = sex.id
+  LEFT JOIN locations ON ${table}.place IS NOT NULL AND ${table}.place = locations.id
+  LEFT JOIN lengths ON ${table}.length IS NOT NULL AND ${table}.length = lengths.id
+  LEFT JOIN coats ON ${table}.coat IS NOT NULL AND ${table}.coat = coats.id
+  LEFT JOIN sizes ON ${table}.size IS NOT NULL AND ${table}.size = sizes.id
+  LEFT JOIN types ON ${table}.type IS NOT NULL AND ${table}.type = types.id
+  LEFT JOIN images ON ${table}.image IS NOT NULL AND ${table}.image = images.id
 `
 
 module.exports = express()
@@ -51,10 +51,10 @@ module.exports = express()
   .get('/', all)
   .post('/', upload.single('image'), add)
   .get('/add', addForm)
-  .get('/:id', get)
+  .get('/:slug', get)
   .put('/:id', set)
   .patch('/:id', change)
-  .delete('/:id', remove)
+  .delete('/:slug', remove)
   .listen(1902)
 
 function all(req, res, next) {
@@ -78,11 +78,12 @@ function all(req, res, next) {
 }
 
 function get(req, res, next) {
-  var id = req.params.id
-  connection.query(`SELECT * FROM animals ${joins('animals')} WHERE animals.id = ${id}`, done)
+  var slug = req.params.slug
+  connection.query(`SELECT * FROM animals ${joins('animals')} WHERE animals.slug = '${slug}'`, done)
 
   function done(err, data) {
     if (err) {
+      console.error(err)
       if (err.code == 'ER_PARSE_ERROR') {
         onerror([400], res)
       }
@@ -102,11 +103,12 @@ function get(req, res, next) {
 
 function addForm(req, res) {
   connection.query(`
-  SELECT * FROM sex as sex;
-  SELECT * FROM coats as coats;
-  SELECT * FROM lengths as lengths;
-  SELECT * FROM locations as locations;
-  SELECT * FROM sizes as sizes`, done)
+    SELECT * FROM sex as sex;
+    SELECT * FROM locations as locations;
+    SELECT * FROM lengths as lengths;
+    SELECT * FROM sizes as sizes;
+    SELECT * FROM coats as coats;
+  `, done)
 
   function done(err, data) {
     if (err) {
@@ -123,6 +125,7 @@ function addForm(req, res) {
 
 function add(req, res, next) {
   var newAnimal = req.body
+  newAnimal.slug = newAnimal.name.toLowerCase() + '_' + newAnimal.date
   if (contentType.parse(req).type === 'multipart/form-data') {
     newAnimal.intake = moment(newAnimal.intake, 'DD-MM-YYY').format('YYYY-MM-DD')
     newAnimal.weight = parseFloat(newAnimal.weight) || 0
@@ -220,22 +223,26 @@ function change(req, res) {
 }
 
 function remove(req, res) {
-  var id = req.params.id
-  try {
-    db.remove(id)
-    fs.unlink(`db/image/${id}.jpg`, function (err) {
-      if (err) {
-        onerror([500], res)
-      }
-    })
-    res.status(204).end()
-  } catch (err) {
-    if (db.removed(id)) {
-      onerror([410], res)
+  var slug = req.params.slug
+  connection.query(`SELECT * FROM animals ${joins('animals')} WHERE animals.slug = '${slug}'`, function(err, result) {
+    console.log(result)
+    if (err) {
+      console.error(err)
+    } else if (result[0].file) {
+      fs.unlink('db/image/' + result[0].file)
+      connection.query(`
+        DELETE FROM images where images.id = ${result[0].id};
+        DELETE FROM animals where animals.slug = ${slug};
+      `, function(err) {
+        if (err) {
+          console.error(err)
+          onerror([500], res)
+        }
+      })
     } else {
-      onerror([404], res)
+      connection.query(`DELETE FROM animals where animals.slug = ${slug}`)
     }
-  }
+  })
 }
 
 function onerror(errCodes, res) {
