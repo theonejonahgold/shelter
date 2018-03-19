@@ -29,7 +29,7 @@ var upload = multer({
   }
 })
 
-var joins = (table) => `
+var joins = table => `
   LEFT JOIN sex ON ${table}.sex = sex.id
   LEFT JOIN locations ON ${table}.place = locations.id
   LEFT JOIN types ON ${table}.type = types.id
@@ -62,10 +62,8 @@ function all(req, res, next) {
 
   function done(err, data) {
     if (err) {
-      console.dir(err)
       onerror([500], res)
     } else {
-      console.log(data)
       var result = {
         data: data
       }
@@ -79,14 +77,11 @@ function all(req, res, next) {
 
 function get(req, res, next) {
   var slug = req.params.slug
-  connection.query(`SELECT * FROM animals ${joins('animals')} WHERE animals.slug = '${slug}'`, done)
+  connection.query(`SELECT * FROM animals ${joins('animals')} WHERE animals.slug = ?`, slug, done)
 
   function done(err, data) {
-    if (err) {
-      console.error(err)
-      if (err.code == 'ER_PARSE_ERROR') {
-        onerror([400], res)
-      }
+    if (err && err.code === 'ER_PARSE_ERROR') {
+      onerror([400], res)
     } else if (!data.length) {
       onerror([404], res)
     } else {
@@ -113,7 +108,6 @@ function addForm(req, res) {
 
   function done(err, data) {
     if (err) {
-      console.error(err)
       onerror([500], res)
     } else {
       var result = {
@@ -131,51 +125,47 @@ function add(req, res, next) {
     newAnimal.intake = moment(newAnimal.intake, 'DD-MM-YYY').format('YYYY-MM-DD')
     newAnimal.weight = parseFloat(newAnimal.weight) || 0
   }
-  connection.query('INSERT INTO animals SET ?', newAnimal, done)
+  connection.query('INSERT INTO animals SET ?', newAnimal, onadd)
 
-  function done(err, entry) {
+  function onadd(err, entry) {
     if (err) {
       onerror([422], res)
     } else if (req.file) {
-      connection.query(`SELECT * from animals ORDER BY animals.id DESC LIMIT 1`, fetched)
+      connection.query(`SELECT name, type, place, slug from animals ORDER BY animals.id DESC LIMIT 1`, fetched)
 
       function fetched(err, entry) {
-        if (err) {
-          console.error(err)
-        } else {
-          fs.rename(req.file.path, `db/image/${entry[0].name}_${entry[0].type}${entry[0].place}.jpg`)
-          connection.query('INSERT INTO images SET ?', {
-            file: `${entry[0].name}_${entry[0].type}${entry[0].place}.jpg`,
-            mime: req.file.mimetype
-          }, done)
+        var entry = entry[0]
+        fs.rename(req.file.path, `db/image/${entry.name}_${entry.type}${entry.place}.jpg`)
+        connection.query('INSERT INTO images SET ?', {
+          file: `${entry.name}_${entry.type}${entry.place}.jpg`,
+          mime: req.file.mimetype
+        }, onimageinsert)
 
-          function done(err, data) {
-            if (err) {
-              fs.unlink(`${entry[0].name}_${entry[0].type}${entry[0].place}.jpg`, function (err) {
-                if (err) {
-                  onerror([500], res)
-                } else {
-                  onerror([422], res)
-                }
-              })
-            } else {
-              console.log(entry[0])
-              connection.query('UPDATE animals SET image = LAST_INSERT_ID() WHERE animals.id = ?', entry[0].id, function (err) {
-
-                if (err) {
-                  console.error(err)
-                } else {
-                  res.redirect(`/${entry[0].id}`)
-                }
-              })
-            }
+        function onimageinsert(err, data) {
+          if (err) {
+            fs.unlink(`${entry.name}_${entry.type}${entry.place}.jpg`, function (err) {
+              if (err) {
+                onerror([500], res)
+              } else {
+                onerror([422], res)
+              }
+            })
+          } else {
+            connection.query('UPDATE animals SET image = LAST_INSERT_ID() WHERE animals.id = ?', entry.id, function (err) {
+              if (err) {
+                console.error(err)
+              } else {
+                res.redirect(`/${entry.slug}`)
+              }
+            })
           }
         }
       }
     } else {
       connection.query('SELECT LAST_INSERT_ID()', fetched)
+
       function fetched(err, entry) {
-        res.redirect(`/${entry[0]['LAST_INSERT_ID()']}`)
+        res.redirect(`/${entry.slug}`)
       }
     }
   }
@@ -185,19 +175,26 @@ function set(req, res) {
   var paramId = req.params.id
   var bodyId = req.body.id
   if (paramId === bodyId) {
-    var resStatus
-    try {
-      if (db.has(bodyId)) {
-        resStatus = 200
-      } else {
+    connection.query('SELECT * FROM animals WHERE animals.id = ', bodyId, onfetch)
+
+    function onfetch (err, data) {
+      var resStatus
+      if (err) {
+        onerror([500], res)
+      } else if (!data.length) {
         resStatus = 201
+      } else {
+        resStatus = 200
       }
-      db.set(req.body)
-      res.status(resStatus).json({
-        data: db.get(bodyId)
-      })
-    } catch (err) {
-      onerror([422], res)
+      connection.query('INSERT INTO animals SET ? ON DUPLICATE KEY UPDATE ?', req.body, done)
+
+      function done(err) {
+        if (err) {
+          onerror([500], res)
+        } else {
+          res.status(resStatus).json()
+        }
+      }
     }
   } else {
     onerror([400], res)
@@ -206,40 +203,41 @@ function set(req, res) {
 
 function change(req, res) {
   var id = req.params.id
-  try {
-    if (db.has(id)) {
-      var dbEntry = db.get(id)
-      Object.assign(dbEntry, req.body)
-      db.set(dbEntry)
-      res.status(200).json({
-        data: db.get(id)
-      })
-    } else if (db.removed(id)) {
-      onerror([410], res)
-    } else {
+  connection.query('SELECT * FROM animals WHERE animals.id = ', bodyId, onfetch)
+
+  function onfetch(err, data) {
+    if (err) {
+      onerror([500], res)
+    } else if (!data[0].length) {
       onerror([404], res)
+    } else {
+      Object.assign(data[0], req.body)
+      connection.query('UPDATE animals SET ? WHERE ID = ?', [req.body, id], done)
+
+      function done(err) {
+        if (err) {
+          onerror([500], res)
+        } else {
+          res.status(200).json()
+        }
+      }
     }
-  } catch (err) {
-    onerror([422], res)
   }
 }
 
 function remove(req, res) {
   var slug = req.params.slug
-  connection.query(`SELECT * FROM animals ${joins('animals')} WHERE animals.slug = ?`, slug, function(err, result) {
-    console.log('delete result:', result)
+  connection.query(`SELECT * FROM animals ${joins('animals')} WHERE animals.slug = ?`, slug, function (err, result) {
     if (err) {
-      console.error(err)
       onerror([500], res)
     } else if (!result.length) {
       onerror([404], res)
     } else if (result[0].file) {
-      fs.unlink('db/image/' + result[0].file, function(err) {
+      fs.unlink('db/image/' + result[0].file, function (err) {
         if (err) {
-          console.error(err)
           onerror([500], res)
         } else {
-          connection.query('DELETE FROM animals where animals.id = ?', result[0].id, function(err) {
+          connection.query('DELETE FROM animals where animals.id = ?', result[0].id, function (err) {
             if (err) {
               onerror([500], res)
             } else {
@@ -249,11 +247,11 @@ function remove(req, res) {
         }
       })
     } else {
-      connection.query(`DELETE FROM animals where animals.slug = ?`, slug, function(err) {
+      connection.query(`DELETE FROM animals where animals.slug = ?`, slug, function (err) {
         if (err) {
           onerror([500], res)
         } else {
-          console.log('hoi')
+          res.status(204).json()
         }
       })
     }
