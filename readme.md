@@ -52,11 +52,29 @@ view/error.ejs - ejs template for errors
 
 
 ## Database
+This project uses [MySQL](https://www.mysql.com) as its program of choice for database management. You need to have it installed. Here are some links for the different platforms it can be installed on:
+- [Windows](https://dev.mysql.com/downloads/windows/)
+- [Mac](https://gist.github.com/nrollr/3f57fc15ded7dddddcc4e82fe137b58e)
+- [Ubuntu/Debian](https://dev.mysql.com/downloads/repo/apt/)
+- [CentOS](https://dev.mysql.com/downloads/repo/yum/)
 
-This project uses MYSQL for data management.
-A database dump can be found in the root of the project.
-Here is an overview of how the database is put together
+When you've installed it and set it up, execute the following commands in this project folder to import the database dump into your local environment.
+```
+mysql -u root -p
+CREATE DATABASE IF NOT EXISTS db_name (where db_name is the name you specify)
+exit
+mysql -u root -p db_name < db_shelter.sql (where db_name is again the name you specify)
+```
+
+After that, you can copy the `.env.exmaple` from the project root and rename it to `.env` and fill in the host (localhost for most people), database name and your credentials (root username and password).
+
+If everything went well, the node server should connect to the db without any issues!
+### DB diagram
+Here is a diagram of how the database is put together
 ![Database structure of Shelter](db_structure.png)
+
+### Set up the database
+
 ## Data
 
 Data is crawled (by `build.js`) from [nycacc][].

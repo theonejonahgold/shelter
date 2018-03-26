@@ -98,12 +98,12 @@ function get(req, res, next) {
 
 function addForm(req, res) {
   connection.query(`
-    SELECT * FROM sex as sex;
-    SELECT * FROM types as types;
-    SELECT * FROM locations as locations;
-    SELECT * FROM lengths as lengths;
-    SELECT * FROM sizes as sizes;
-    SELECT * FROM coats as coats;
+    SELECT * FROM sex;
+    SELECT * FROM types;
+    SELECT * FROM locations;
+    SELECT * FROM lengths;
+    SELECT * FROM sizes;
+    SELECT * FROM coats;
   `, done)
 
   function done(err, data) {
